@@ -29,6 +29,18 @@ body {
     max-width: 100vw;
 }
 
+/* Prevent horizontal overflow on mobile only */
+@media (max-width: 768px) {
+    * {
+        max-width: 100%;
+    }
+    
+    img, video, iframe {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -75,7 +87,7 @@ body {
 }
 
 .logo-image {
-    height: 40px;
+    height: 50px;
     width: auto;
     object-fit: contain;
 }
@@ -957,8 +969,6 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
     align-items: center;
-    width: 100%;
-    max-width: 100%;
 }
 
 /* Landing Page Specific Styles */
@@ -1557,8 +1567,6 @@ body {
     background: var(--light-gray);
     padding: 2rem;
     border-radius: 15px;
-    width: 100%;
-    max-width: 100%;
 }
 
 .form-group {
@@ -1690,6 +1698,11 @@ body {
         padding: 0 15px;
     }
     
+    /* Hide logo text on mobile to save space */
+    .logo-text {
+        display: none;
+    }
+    
     .hamburger {
         display: flex;
     }
@@ -1712,7 +1725,7 @@ body {
     }
 
     .logo-image {
-        height: 35px;
+        height: 45px;
     }
 
     .footer-logo .logo-image {
@@ -1785,11 +1798,38 @@ body {
         transform: none;
     }
     
+    .building-mockup {
+        width: 350px;
+        height: 350px;
+        max-width: 90vw;
+    }
+    
+    .building-mockup {
+        max-width: 100%;
+    }
+    
     /* Contact form mobile optimization */
     .contact-form {
         padding: 1.5rem;
         margin: 0 -15px;
         border-radius: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .contact-content {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .hero-container {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .hero {
+        width: 100%;
+        max-width: 100vw;
     }
     
     .form-group input,
@@ -1831,7 +1871,7 @@ body {
     }
     
     .logo-image {
-        height: 32px;
+        height: 40px;
     }
     
     .hero-title {
@@ -1845,6 +1885,12 @@ body {
     .btn {
         padding: 0.8rem 1.2rem;
         font-size: 0.9rem;
+    }
+    
+    .building-mockup {
+        width: 320px;
+        height: 320px;
+        max-width: 90vw;
     }
     
     .contact-form {
@@ -1888,6 +1934,7 @@ body {
     .building-mockup {
         width: 280px;
         height: 280px;
+        max-width: 90vw;
     }
 
     .kiosk-screen {
@@ -1925,7 +1972,7 @@ body {
     }
     
     .logo-image {
-        height: 28px;
+        height: 35px;
     }
     
     .hero-title {
