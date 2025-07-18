@@ -47,11 +47,18 @@ const navbar = document.querySelector('.navbar');
 window.addEventListener('scroll', () => {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     
-    // Hide/show navbar based on scroll direction
+    // Show navbar when scrolling down from the top
+    if (scrollTop > 50) {
+        navbar.classList.add('visible');
+    } else {
+        navbar.classList.remove('visible');
+    }
+    
+    // Hide/show navbar based on scroll direction (only when already visible)
     if (scrollTop > lastScrollTop && scrollTop > 100) {
         // Scrolling down - hide navbar
         navbar.style.transform = 'translateY(-100%)';
-    } else {
+    } else if (scrollTop < lastScrollTop && scrollTop > 50) {
         // Scrolling up - show navbar
         navbar.style.transform = 'translateY(0)';
     }
@@ -89,6 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
     animatedElements.forEach(el => {
         observer.observe(el);
     });
+    
+    // Ensure navbar is hidden on page load
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        navbar.classList.remove('visible');
+    }
 });
 
 // Contact form handling
