@@ -345,6 +345,94 @@ body {
     fill: var(--white);
 }
 
+/* Info Hero Specific Styles */
+.info-hero {
+    background: linear-gradient(135deg, #008CFF 0%, #32A71A 100%);
+}
+
+.info-hero .hero-container {
+    grid-template-columns: 1fr 1fr;
+}
+
+.info-hero .hero-visual {
+    order: 1;
+}
+
+.info-hero .hero-content {
+    order: 2;
+}
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-badge i {
+    color: #FFD700;
+    font-size: 0.9rem;
+}
+
+.hero-badge span {
+    color: var(--white);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.highlight-text {
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 2rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.hero-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.hero-stats .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+}
+
+.hero-stats .stat-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--white);
+    border: 2px solid var(--white);
+}
+
+.btn-outline:hover {
+    background: var(--white);
+    color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+
 /* Section Headers */
 .section-header {
     text-align: center;
@@ -2042,6 +2130,32 @@ body {
     .hero-stats {
         justify-content: center;
         flex-wrap: wrap;
+    }
+    
+    .info-hero .hero-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .info-hero .hero-visual {
+        order: 2;
+    }
+    
+    .info-hero .hero-content {
+        order: 1;
+    }
+    
+    .hero-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .hero-stats .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .hero-stats .stat-label {
+        font-size: 0.8rem;
     }
 
     .solution-content,
