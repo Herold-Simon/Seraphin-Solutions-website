@@ -433,6 +433,10 @@ body {
     transform: translateY(-2px);
 }
 
+.btn-outline:focus {
+    color: var(--white);
+}
+
 /* Section Headers */
 .section-header {
     text-align: center;
