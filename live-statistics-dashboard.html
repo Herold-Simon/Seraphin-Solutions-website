@@ -274,6 +274,9 @@
         <div class="header">
             <h1>🏢 Gebäudenavi Live Statistiken</h1>
             <p>Echtzeit-Dashboard für Video-Aufrufe und Nutzungsstatistiken</p>
+            <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem;">
+                <strong>📋 Anleitung:</strong> Gehe zur App → Admin-Panel → Statistiken → "🌐 Live Dashboard" klicken → URL in Browser einfügen
+            </div>
         </div>
 
         <div class="status-bar">
@@ -357,7 +360,9 @@
             // Fallback-Daten für Demo-Zwecke
             DEMO_MODE: false,
             // Verwende localStorage für Daten von der App
-            USE_LOCALSTORAGE: true
+            USE_LOCALSTORAGE: true,
+            // Verwende URL-Parameter als Fallback
+            USE_URL_PARAMS: true
         };
 
         // Globale Variablen
@@ -484,13 +489,13 @@
                 let data;
                 
                 if (CONFIG.USE_LOCALSTORAGE) {
-                    // Versuche Daten aus localStorage zu laden (von der App)
+                    // Versuche zuerst localStorage
                     const localStorageData = localStorage.getItem('liveStatisticsData');
                     if (localStorageData) {
                         const parsedData = JSON.parse(localStorageData);
                         if (parsedData.success && parsedData.data) {
                             data = parsedData.data;
-                            updateStatus('Daten von App geladen', true);
+                            updateStatus('Daten von App geladen (localStorage)', true);
                             
                             // Zeige zusätzliche Info über die Daten
                             console.log('Geladene Daten:', {
@@ -501,6 +506,22 @@
                             });
                         } else {
                             throw new Error('Ungültige Daten im localStorage');
+                        }
+                    } else if (CONFIG.USE_URL_PARAMS) {
+                        // Fallback: Versuche URL-Parameter
+                        const urlData = getDataFromURL();
+                        if (urlData && urlData.success && urlData.data) {
+                            data = urlData.data;
+                            updateStatus('Daten von App geladen (URL)', true);
+                            
+                            console.log('Geladene Daten aus URL:', {
+                                videos: data.videos?.length || 0,
+                                floors: data.floors?.length || 0,
+                                totalViews: data.totalViews || 0,
+                                timestamp: urlData.timestamp
+                            });
+                        } else {
+                            throw new Error('Keine Daten im localStorage oder URL gefunden');
                         }
                     } else {
                         throw new Error('Keine Daten im localStorage gefunden');
@@ -695,6 +716,39 @@
                 }
             } catch (error) {
                 console.error('Fehler beim Überprüfen des localStorage:', error);
+            }
+        }
+
+        // Daten aus URL-Parametern lesen
+        function getDataFromURL() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const dataParam = urlParams.get('data');
+                
+                if (dataParam) {
+                    // Dekodiere Base64-Daten
+                    const decodedData = atob(dataParam);
+                    const parsedData = JSON.parse(decodedData);
+                    
+                    console.log('Daten aus URL-Parametern geladen');
+                    return parsedData;
+                }
+            } catch (error) {
+                console.error('Fehler beim Lesen der URL-Parameter:', error);
+            }
+            return null;
+        }
+
+        // Daten in URL-Parameter konvertieren (für Export)
+        function createDataURL(data) {
+            try {
+                const jsonString = JSON.stringify(data);
+                const base64Data = btoa(jsonString);
+                const currentURL = window.location.origin + window.location.pathname;
+                return `${currentURL}?data=${encodeURIComponent(base64Data)}`;
+            } catch (error) {
+                console.error('Fehler beim Erstellen der Daten-URL:', error);
+                return null;
             }
         }
 
