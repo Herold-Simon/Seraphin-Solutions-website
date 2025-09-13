@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gebäudenavi - Live Statistiken</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #44ff44;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .chart-container h3 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .time-range-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .time-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: #e2e8f0;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .time-btn:hover {
+            background: #cbd5e0;
+        }
+
+        .time-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .video-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .video-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+
+        .video-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .video-item:last-child {
+            border-bottom: none;
+        }
+
+        .video-title {
+            font-weight: 500;
+            color: #2d3748;
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .video-views {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #fc8181;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+
+        .last-update {
+            color: #718096;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .time-range-selector {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Gebäudenavi Live Statistiken</h1>
+            <p>Echtzeit-Dashboard für Video-Aufrufe und Nutzungsstatistiken</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Verbindung wird hergestellt...</span>
+            </div>
+            <div>
+                <button class="refresh-btn" onclick="refreshData()">🔄 Aktualisieren</button>
+                <span class="last-update" id="lastUpdate"></span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📊 Gesamt Videos</h3>
+                <div class="stat-value" id="totalVideos">-</div>
+                <div class="stat-label">Videos im System</div>
+            </div>
+            <div class="stat-card">
+                <h3>👀 Gesamt Aufrufe</h3>
+                <div class="stat-value" id="totalViews">-</div>
+                <div class="stat-label">Alle Video-Aufrufe</div>
+            </div>
+            <div class="stat-card">
+                <h3>📈 Aktive Videos</h3>
+                <div class="stat-value" id="activeVideos">-</div>
+                <div class="stat-label">Videos mit Aufrufen</div>
+            </div>
+            <div class="stat-card">
+                <h3>🏢 Stockwerke</h3>
+                <div class="stat-value" id="totalFloors">-</div>
+                <div class="stat-label">Verfügbare Stockwerke</div>
+            </div>
+        </div>
+
+        <div class="time-range-selector">
+            <button class="time-btn active" onclick="setTimeRange('7d')">7 Tage</button>
+            <button class="time-btn" onclick="setTimeRange('30d')">30 Tage</button>
+            <button class="time-btn" onclick="setTimeRange('90d')">90 Tage</button>
+            <button class="time-btn" onclick="setTimeRange('1y')">1 Jahr</button>
+            <button class="time-btn" onclick="setTimeRange('all')">Alle</button>
+        </div>
+
+        <div class="chart-container">
+            <h3>📊 Top Videos - Aufrufe im Zeitraum</h3>
+            <div class="chart-wrapper">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>🥧 Video-Verteilung</h3>
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>📈 Aufrufe über Zeit</h3>
+            <div class="chart-wrapper">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>🏆 Top 10 Videos</h3>
+            <div class="video-list" id="topVideosList">
+                <div class="loading">Lade Video-Liste...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfiguration
+        const CONFIG = {
+            // URL zur API - hier die URL zu deinem Server anpassen
+            API_URL: 'http://localhost:3000/api/stats',
+            // Aktualisierungsintervall in Millisekunden (5 Minuten)
+            REFRESH_INTERVAL: 5 * 60 * 1000,
+            // Fallback-Daten für Demo-Zwecke
+            DEMO_MODE: true
+        };
+
+        // Globale Variablen
+        let currentTimeRange = '7d';
+        let barChart, pieChart, lineChart;
+        let refreshInterval;
+
+        // Demo-Daten (falls API nicht verfügbar)
+        const DEMO_DATA = {
+            videos: [
+                { id: '1', title: 'Eingang & Rezeption', views: 245, lastViewed: Date.now() - 86400000 },
+                { id: '2', title: 'Konferenzraum A', views: 189, lastViewed: Date.now() - 172800000 },
+                { id: '3', title: 'Bürobereich 1. OG', views: 156, lastViewed: Date.now() - 259200000 },
+                { id: '4', title: 'Cafeteria', views: 134, lastViewed: Date.now() - 345600000 },
+                { id: '5', title: 'IT-Abteilung', views: 98, lastViewed: Date.now() - 432000000 },
+                { id: '6', title: 'Meeting Room B', views: 87, lastViewed: Date.now() - 518400000 },
+                { id: '7', title: 'Lager', views: 76, lastViewed: Date.now() - 604800000 },
+                { id: '8', title: 'Parkplatz', views: 65, lastViewed: Date.now() - 691200000 }
+            ],
+            floors: [
+                { id: '1', name: 'Erdgeschoss' },
+                { id: '2', name: '1. Obergeschoss' },
+                { id: '3', name: '2. Obergeschoss' }
+            ],
+            timeRangeStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            timeRangeEnd: new Date()
+        };
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadData();
+            startAutoRefresh();
+        });
+
+        // Chart-Initialisierung
+        function initializeCharts() {
+            // Bar Chart
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Aufrufe',
+                        data: [],
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Pie Chart
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Line Chart
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Daten laden
+        async function loadData() {
+            try {
+                updateStatus('Verbindung wird hergestellt...', false);
+                
+                let data;
+                if (CONFIG.DEMO_MODE) {
+                    // Demo-Modus verwenden
+                    data = DEMO_DATA;
+                    updateStatus('Demo-Modus aktiv', true);
+                } else {
+                    // Echte API verwenden
+                    const response = await fetch(CONFIG.API_URL);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    data = await response.json();
+                    updateStatus('Verbunden', true);
+                }
+
+                updateStatistics(data);
+                updateCharts(data);
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error('Fehler beim Laden der Daten:', error);
+                updateStatus('Verbindungsfehler', false);
+                
+                // Fallback zu Demo-Daten
+                if (!CONFIG.DEMO_MODE) {
+                    CONFIG.DEMO_MODE = true;
+                    loadData();
+                }
+            }
+        }
+
+        // Statistiken aktualisieren
+        function updateStatistics(data) {
+            const totalVideos = data.videos.length;
+            const totalViews = data.videos.reduce((sum, video) => sum + (video.views || 0), 0);
+            const activeVideos = data.videos.filter(video => (video.views || 0) > 0).length;
+            const totalFloors = data.floors.length;
+
+            document.getElementById('totalVideos').textContent = totalVideos;
+            document.getElementById('totalViews').textContent = totalViews.toLocaleString();
+            document.getElementById('activeVideos').textContent = activeVideos;
+            document.getElementById('totalFloors').textContent = totalFloors;
+        }
+
+        // Charts aktualisieren
+        function updateCharts(data) {
+            const filteredVideos = getFilteredVideos(data.videos);
+            const topVideos = filteredVideos
+                .sort((a, b) => (b.views || 0) - (a.views || 0))
+                .slice(0, 8);
+
+            // Bar Chart
+            barChart.data.labels = topVideos.map(video => video.title.length > 20 ? 
+                video.title.substring(0, 20) + '...' : video.title);
+            barChart.data.datasets[0].data = topVideos.map(video => video.views || 0);
+            barChart.update();
+
+            // Pie Chart
+            pieChart.data.labels = topVideos.map(video => video.title.length > 15 ? 
+                video.title.substring(0, 15) + '...' : video.title);
+            pieChart.data.datasets[0].data = topVideos.map(video => video.views || 0);
+            pieChart.update();
+
+            // Line Chart (vereinfacht - zeigt kumulative Aufrufe)
+            const timePoints = generateTimePoints(data.timeRangeStart, data.timeRangeEnd);
+            lineChart.data.labels = timePoints;
+            
+            const top5Videos = topVideos.slice(0, 5);
+            lineChart.data.datasets = top5Videos.map((video, index) => ({
+                label: video.title.length > 15 ? video.title.substring(0, 15) + '...' : video.title,
+                data: timePoints.map(() => Math.floor(Math.random() * (video.views || 0))),
+                borderColor: `hsl(${index * 72}, 70%, 50%)`,
+                backgroundColor: `hsla(${index * 72}, 70%, 50%, 0.1)`,
+                tension: 0.4
+            }));
+            lineChart.update();
+
+            // Top Videos Liste
+            updateTopVideosList(filteredVideos.slice(0, 10));
+        }
+
+        // Top Videos Liste aktualisieren
+        function updateTopVideosList(videos) {
+            const listContainer = document.getElementById('topVideosList');
+            
+            if (videos.length === 0) {
+                listContainer.innerHTML = '<div class="loading">Keine Videos gefunden</div>';
+                return;
+            }
+
+            listContainer.innerHTML = videos.map((video, index) => `
+                <div class="video-item">
+                    <div class="video-title">
+                        <strong>#${index + 1}</strong> ${video.title}
+                    </div>
+                    <div class="video-views">${(video.views || 0).toLocaleString()} Aufrufe</div>
+                </div>
+            `).join('');
+        }
+
+        // Zeitraum-Filter
+        function getFilteredVideos(videos) {
+            const now = new Date();
+            let startDate;
+
+            switch (currentTimeRange) {
+                case '7d':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30d':
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case '90d':
+                    startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                    break;
+                case '1y':
+                    startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    return videos;
+            }
+
+            return videos.filter(video => {
+                if (!video.lastViewed) return false;
+                return new Date(video.lastViewed) >= startDate;
+            });
+        }
+
+        // Zeitpunkte für Line Chart generieren
+        function generateTimePoints(startDate, endDate) {
+            const points = [];
+            const current = new Date(startDate);
+            
+            while (current <= endDate) {
+                points.push(current.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return points;
+        }
+
+        // Zeitraum setzen
+        function setTimeRange(range) {
+            currentTimeRange = range;
+            
+            // UI aktualisieren
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Daten neu laden
+            loadData();
+        }
+
+        // Status aktualisieren
+        function updateStatus(text, connected) {
+            document.getElementById('statusText').textContent = text;
+            const statusDot = document.getElementById('statusDot');
+            statusDot.classList.toggle('connected', connected);
+        }
+
+        // Letzte Aktualisierung
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                `Letzte Aktualisierung: ${now.toLocaleTimeString('de-DE')}`;
+        }
+
+        // Manuelle Aktualisierung
+        function refreshData() {
+            loadData();
+        }
+
+        // Auto-Refresh starten
+        function startAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            
+            refreshInterval = setInterval(() => {
+                loadData();
+            }, CONFIG.REFRESH_INTERVAL);
+        }
+
+        // Cleanup beim Verlassen der Seite
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
